@@ -21,11 +21,11 @@ jobs:
       - checkout
       - setup_remote_docker
       - restore_cache:
-          key: << parameters.image-name >>
+          key: layers-<< parameters.image-name >>
       - run:
           name: restore image cache
           command: |
-            docker load < layer-cache.tar || true
+            docker load < layer-cache-<< parameters.build-dir >>.tar || true
       - run:
           name: build
           command: |
@@ -41,11 +41,11 @@ jobs:
       - run:
           name: save layers
           command: |
-            docker save $(docker images -q) > layer-cache.tar
+            docker save $(docker images -q) > layer-cache-<< parameters.build-dir >>.tar
       - save_cache:
-          key: << parameters.image-name >>
+          key: layers-<< parameters.image-name >>
           paths:
-            - layer-cache.tar
+            - layer-cache-<< parameters.build-dir >>.tar
 
   deploy:
     executor: gcloud
