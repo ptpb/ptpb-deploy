@@ -3,12 +3,17 @@
 bootcmd:
   - fsck.ext4 -tvy /dev/sdb1
   - fsck.ext4 -tvy /dev/sdb2
-  - mkdir -p /mnt/disks/bin
+  - mkdir -p /mnt/disks/certs
   - mkdir -p /mnt/disks/data
-  - mount -t ext4 -o ro,nosuid,nodev,relatime,commit=30,data=ordered /dev/sdb1 /mnt/disks/bin
+  - mount -t ext4 -o ro,nosuid,nodev,relatime,commit=30,data=ordered /dev/sdb1 /mnt/disks/certs
   - mount -t ext4 -o rw,nosuid,nodev,noexec,relatime,commit=30,data=ordered /dev/sdb2 /mnt/disks/data
 
 write_files:
+  - path: /etc/default/docker
+    permissions: 0644
+    owner: root
+    content: |
+      DOCKER_OPTS="-H tcp://0.0.0.0:2376 -H unix:///var/run/docker.sock --tlsverify --tlscacert=/mnt/disks/certs/ca.pem --tlscert=/mnt/disks/certs/instance-ptpb-aio.pem --tlskey=/mnt/disks/certs/instance-ptpb-aio-key.pem"
   - path: /etc/systemd/system/docker-network@.service
     permissions: 0644
     owner: root
@@ -44,7 +49,7 @@ write_files:
       Restart=always
       ExecStartPre=-/usr/bin/docker kill openresty
       ExecStartPre=-/usr/bin/docker rm openresty
-      ExecStartPre=-/usr/bin/docker pull ptpb/openresty
+      #ExecStartPre=-/usr/bin/docker pull ptpb/openresty
       ExecStart=/usr/bin/docker run --rm \
          --name openresty \
          --network ptpb \
@@ -71,7 +76,7 @@ write_files:
       Restart=always
       ExecStartPre=-/usr/bin/docker kill mongo
       ExecStartPre=-/usr/bin/docker rm mongo
-      ExecStartPre=-/usr/bin/docker pull mongo:4
+      #ExecStartPre=-/usr/bin/docker pull mongo:4
       ExecStart=/usr/bin/docker run --rm \
          --name mongo \
          --network ptpb \
@@ -98,7 +103,7 @@ write_files:
       Restart=always
       ExecStartPre=-/usr/bin/docker kill pb
       ExecStartPre=-/usr/bin/docker rm pb
-      ExecStartPre=-/usr/bin/docker pull ptpb/pb
+      #ExecStartPre=-/usr/bin/docker pull ptpb/pb
       ExecStart=/usr/bin/docker run --rm \
           --name pb \
           --network ptpb \
@@ -124,7 +129,7 @@ write_files:
       Restart=always
       ExecStartPre=-/usr/bin/docker kill varnish
       ExecStartPre=-/usr/bin/docker rm varnish
-      ExecStartPre=-/usr/bin/docker pull ptpb/varnish
+      #ExecStartPre=-/usr/bin/docker pull ptpb/varnish
       ExecStart=/usr/bin/docker run --rm \
           --name varnish \
           --network ptpb \

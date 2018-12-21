@@ -48,21 +48,24 @@ jobs:
             - layer-cache-<< parameters.build-dir >>.tar
 
   deploy:
-    executor: gcloud
+    executor: docker-in-docker
     steps:
       - run:
           name: auth
           command: |
-            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
-            gcloud config set compute/zone us-central1-c
-            gcloud config set project crucial-baton-168900
+            mkdir certs
+            echo $DOCKER_CLIENT_KEY > certs/key.pem
+            echo $DOCKER_CLIENT_CERT > certs/cert.pem
+            echo $DOCKER_CA_CERT > certs/ca.pem
       - run:
-          name: service restart
+          name: stop container
+          environment:
+            DOCKER_CERT_PATH: ./certs
+            DOCKER_HOST: tcp://ptpb-aio.instance.buhman.org:2376
+            DOCKER_TLS_VERIFY: 1
           command: |
-            ssh-keygen -t rsa -N "" -f ~/.ssh/google_compute_engine
-            gcloud compute ssh instance-ptpb-aio -- systemctl restart pb.service
-            gcloud compute ssh instance-ptpb-aio -- systemctl restart varnish.service
-            gcloud compute ssh instance-ptpb-aio -- systemctl restart openresty.service
+            # systemd handles the rest of the restart chain
+            docker stop pb
 
 workflows:
   version: 2
