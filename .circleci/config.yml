@@ -43,9 +43,11 @@ jobs:
             gcloud config set compute/zone us-central1-c
             gcloud config set project crucial-baton-168900
       - run:
-          name: test
+          name: service restart
           command: |
-            gcloud compute instances list
+            gcloud compute ssh instance-ptpb-aio -- systemctl restart pb.service
+            gcloud compute ssh instance-ptpb-aio -- systemctl restart varnish.service
+            gcloud compute ssh instance-ptpb-aio -- systemctl restart openresty.service
 
 workflows:
   version: 2
