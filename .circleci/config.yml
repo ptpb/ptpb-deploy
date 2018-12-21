@@ -56,13 +56,16 @@ jobs:
             docker pull ptpb/pb
             docker pull ptpb/varnish
             docker pull ptpb/openresty
-
-            docker image prune -f
       - run:
-          name: stop container
+          name: stop
           command: |
             # systemd handles the rest of the restart chain
             docker stop pb
+      - run:
+          name: prune
+          command: |
+            docker image prune -f
+            docker container prune -f
 
 workflows:
   version: 2
