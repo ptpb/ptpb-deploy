@@ -41,6 +41,7 @@ jobs:
       - run:
           name: save layers
           command: |
+            echo $(docker images -q)
             docker save $(docker images -q) > layer-cache-<< parameters.build-dir >>.tar
       - save_cache:
           key: layers-<< parameters.image-name >>
@@ -57,6 +58,9 @@ jobs:
             echo $DOCKER_CLIENT_KEY > certs/key.pem
             echo $DOCKER_CLIENT_CERT > certs/cert.pem
             echo $DOCKER_CA_CERT > certs/ca.pem
+
+            # such hack, much wow
+            sed -i 's/----- /-----\n/g;s/ -----/\n-----/g' certs/key.pem certs/cert.pem certs/ca.pem
       - run:
           name: stop container
           environment:
