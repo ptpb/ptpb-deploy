@@ -3,7 +3,11 @@ version: 2.1
 executors:
   docker-in-docker:
     docker:
-      - image: buhman/docker-compose
+      - image: docker:stable
+
+  gcloud:
+    docker:
+      - image: google/cloud-sdk:alpine
 
 jobs:
   build-image:
@@ -25,20 +29,36 @@ jobs:
           command: |
             echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run:
-          name: build
+          name: push
           command: |
             docker push << parameters.image-name >>
+
+  deploy:
+    executor: gcloud
+    steps:
+      - run:
+          name: test
+          command: |
+            echo testing
 
 workflows:
   version: 2
   build:
     jobs:
       - build-image:
+          name: build-image-pb
           image-name: ptpb/pb
           build-dir: pb
       - build-image:
+          name: build-image-varnish
           image-name: ptpb/varnish
           build-dir: varnish
       - build-image:
+          name: build-image-openresty
           image-name: ptpb/openresty
           build-dir: openresty
+      - deploy:
+          requires:
+            - build-image-pb
+            - build-image-varnish
+            - build-image-openresty
