@@ -1,24 +1,44 @@
-version: 2
-jobs:
-  build:
+version: 2.1
+
+executors:
+  docker-in-docker:
     docker:
       - image: buhman/docker-compose
+
+jobs:
+  build-image:
+    parameters:
+      image-name:
+        type: string
+      build-dir:
+        type: string
+    executor: docker-in-docker
     steps:
       - checkout
       - setup_remote_docker
       - run:
           name: build
           command: |
-            docker build -t ptpb/pb ./pb
-            docker build -t ptpb/varnish ./varnish
-            docker build -t ptpb/openresty ./openresty
+            docker build -t << parameters.image-name >> ./<< parameters.build-dir >>
       - run:
           name: docker login
           command: |
-            docker login -u $DOCKER_USER -p $DOCKER_PASS
+            docker login --username $DOCKER_USER --password-stdin \<<< $DOCKER_PASS
       - run:
           name: build
           command: |
-            docker push ptpb/pb
-            docker push ptpb/varnish
-            docker push ptpb/openresty
+            docker push << parameters.image-name >>
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build-image:
+          image-name: ptpb/pb
+          build-dir: pb
+      - build-image:
+          image-name: ptpb/varnish
+          build-dir: varnish
+      - build-image:
+          image-name: ptpb/openresty
+          build-dir: openresty
