@@ -50,6 +50,7 @@ write_files:
          --network ptpb \
          -p 80:80 -p 443:443 \
          -v /mnt/disks/data/letsencrypt:/etc/letsencrypt \
+         -v /mnt/disks/data/resty-auto-ssl:/etc/resty-auto-ssl \
          ptpb/openresty
       ExecStop=/usr/bin/docker stop openresty
 
