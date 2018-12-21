@@ -35,9 +35,9 @@ write_files:
       [Unit]
       Description=openresty (Docker)
       After=docker-network@ptpb.service
-      After=pb.service
+      After=varnish.service
       Requires=docker-network@ptpb.service
-      Requires=pb.service
+      Requires=varnish.service
 
       [Service]
       TimeoutStartSec=0
@@ -63,9 +63,7 @@ write_files:
       [Unit]
       Description=mongo (Docker)
       After=docker-network@ptpb.service
-      After=mongo.service
       Requires=docker-network@ptpb.service
-      Requires=mongo.service
 
       [Service]
       TimeoutStartSec=0
@@ -90,7 +88,9 @@ write_files:
       [Unit]
       Description=pb (Docker)
       After=docker-network@ptpb.service
+      After=mongo.service
       Requires=docker-network@ptpb.service
+      Requires=mongo.service
 
       [Service]
       TimeoutStartSec=0
@@ -107,6 +107,36 @@ write_files:
       [Install]
       WantedBy=multi-user.target
 
+  - path: /etc/systemd/system/varnish.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=pb (Docker)
+      After=docker-network@ptpb.service
+      After=pb.service
+      Requires=docker-network@ptpb.service
+      Requires=pb.service
+
+      [Service]
+      TimeoutStartSec=0
+      Restart=always
+      ExecStartPre=-/usr/bin/docker kill varnish
+      ExecStartPre=-/usr/bin/docker rm varnish
+      ExecStartPre=-/usr/bin/docker pull ptpb/varnish
+      ExecStart=/usr/bin/docker run --rm \
+          --name varnish \
+          --network ptpb \
+          ptpb/varnish
+      ExecStop=/usr/bin/docker stop varnish
+
+      [Install]
+      WantedBy=multi-user.target
+
 runcmd:
   - systemctl daemon-reload
   - systemctl start docker-network@ptpb.service
+  - systemctl start mongo.service
+  - systemctl start pb.service
+  - systemctl start openresty.service
+  - systemctl start varnish.service
