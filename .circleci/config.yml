@@ -20,6 +20,12 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
+      - restore_cache:
+          key: << parameters.image-name >>
+      - run:
+          name: restore image cache
+          command: |
+            docker load < layer-cache.tar || true
       - run:
           name: build
           command: |
@@ -32,6 +38,14 @@ jobs:
           name: push
           command: |
             docker push << parameters.image-name >>
+      - run:
+          name: save layers
+          command: |
+            docker save $(docker images -q) > layer-cache.tar
+      - save_cache:
+          key: << parameters.image-name >>
+          paths:
+            - layer-cache.tar
 
   deploy:
     executor: gcloud
@@ -45,6 +59,7 @@ jobs:
       - run:
           name: service restart
           command: |
+            ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
             gcloud compute ssh instance-ptpb-aio -- systemctl restart pb.service
             gcloud compute ssh instance-ptpb-aio -- systemctl restart varnish.service
             gcloud compute ssh instance-ptpb-aio -- systemctl restart openresty.service
