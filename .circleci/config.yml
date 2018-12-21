@@ -23,7 +23,7 @@ jobs:
       - run:
           name: docker login
           command: |
-            docker login --username $DOCKER_USER --password-stdin \<<< $DOCKER_PASS
+            echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run:
           name: build
           command: |
