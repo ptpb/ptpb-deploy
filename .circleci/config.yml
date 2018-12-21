@@ -1,0 +1,24 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: buhman/docker-compose
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: build
+          command: |
+            docker build -t ptpb/pb ./pb
+            docker build -t ptpb/varnish ./varnish
+            docker build -t ptpb/openresty ./openresty
+      - run:
+          name: docker login
+          command: |
+            docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run:
+          name: build
+          command: |
+            docker push ptpb/pb
+            docker push ptpb/varnish
+            docker push ptpb/openresty
