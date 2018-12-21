@@ -21,15 +21,17 @@ jobs:
       - checkout
       - setup_remote_docker
       - restore_cache:
-          key: layers-<< parameters.image-name >>
+          keys:
+            - lc-<< parameters.image-name >>-{{ .Revision }}
+            - lc-<< parameters.image-name >>
       - run:
           name: restore image cache
           command: |
-            docker load < layer-cache-<< parameters.build-dir >>.tar || true
+            docker load < layer-cache.tar || true
       - run:
           name: build
           command: |
-            docker build -t << parameters.image-name >> ./<< parameters.build-dir >>
+            docker build --rm=false -t << parameters.image-name >> ./<< parameters.build-dir >>
       - run:
           name: login
           command: |
@@ -41,12 +43,15 @@ jobs:
       - run:
           name: save layers
           command: |
-            echo $(docker images -q)
-            docker save $(docker images -q) > layer-cache-<< parameters.build-dir >>.tar
+            docker save $(docker images -q) > layer-cache.tar
       - save_cache:
-          key: layers-<< parameters.image-name >>
+          key: lc-<< parameters.image-name >>-{{ .Revision }}
           paths:
-            - layer-cache-<< parameters.build-dir >>.tar
+            - layer-cache.tar
+      - save_cache:
+          key: lc-<< parameters.image-name >>
+          paths:
+            - layer-cache.tar
 
   deploy:
     executor: docker-in-docker
