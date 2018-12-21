@@ -35,6 +35,10 @@ jobs:
 
   deploy:
     executor: docker-in-docker
+    environment:
+      DOCKER_CERT_PATH: ./certs
+      DOCKER_HOST: tcp://ptpb-aio.instance.buhman.org:2376
+      DOCKER_TLS_VERIFY: 1
     steps:
       - run:
           name: auth
@@ -47,11 +51,15 @@ jobs:
             # such hack, much wow
             sed -i 's/----- /-----\n/g;s/ -----/\n-----/g' certs/key.pem certs/cert.pem certs/ca.pem
       - run:
+          name: pull
+          command: |
+            docker pull ptpb/pb
+            docker pull ptpb/varnish
+            docker pull ptpb/openresty
+
+            docker image prune -f
+      - run:
           name: stop container
-          environment:
-            DOCKER_CERT_PATH: ./certs
-            DOCKER_HOST: tcp://ptpb-aio.instance.buhman.org:2376
-            DOCKER_TLS_VERIFY: 1
           command: |
             # systemd handles the rest of the restart chain
             docker stop pb
