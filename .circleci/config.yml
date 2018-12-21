@@ -25,7 +25,7 @@ jobs:
           command: |
             docker build -t << parameters.image-name >> ./<< parameters.build-dir >>
       - run:
-          name: docker login
+          name: login
           command: |
             echo $DOCKER_PASS | docker login --username $DOCKER_USER --password-stdin
       - run:
@@ -37,13 +37,19 @@ jobs:
     executor: gcloud
     steps:
       - run:
+          name: auth
+          command: |
+            echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+            gcloud config set compute/zone us-central1-c
+            gcloud config set project crucial-baton-168900
+      - run:
           name: test
           command: |
-            echo testing
+            gcloud compute instances list
 
 workflows:
   version: 2
-  build:
+  build_and_deploy:
     jobs:
       - build-image:
           name: build-image-pb
