@@ -1,0 +1,112 @@
+#cloud-config
+
+bootcmd:
+  - fsck.ext4 -tvy /dev/sdb1
+  - fsck.ext4 -tvy /dev/sdb2
+  - mkdir -p /mnt/disks/bin
+  - mkdir -p /mnt/disks/data
+  - mount -t ext4 -o ro,nosuid,nodev,relatime,commit=30,data=ordered /dev/sdb1 /mnt/disks/bin
+  - mount -t ext4 -o rw,nosuid,nodev,noexec,relatime,commit=30,data=ordered /dev/sdb2 /mnt/disks/data
+
+write_files:
+  - path: /etc/systemd/system/docker-network@.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=ptpb user-defined service network
+      After=docker.service
+      Requires=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=true
+      ExecStartPre=-/usr/bin/docker network rm %i
+      ExecStart=/usr/bin/docker network create %i
+      ExecStop=/usr/bin/docker network rm %i
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/systemd/system/openresty.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=openresty (Docker)
+      After=docker-network@ptpb.service
+      After=pb.service
+      Requires=docker-network@ptpb.service
+      Requires=pb.service
+
+      [Service]
+      TimeoutStartSec=0
+      Restart=always
+      ExecStartPre=-/usr/bin/docker kill openresty
+      ExecStartPre=-/usr/bin/docker rm openresty
+      ExecStartPre=-/usr/bin/docker pull ptpb/openresty
+      ExecStart=/usr/bin/docker run --rm \
+         --name openresty \
+         --network ptpb \
+         -p 80:80 -p 443:443 \
+         -v /mnt/disks/data/letsencrypt:/etc/letsencrypt \
+         ptpb/openresty
+      ExecStop=/usr/bin/docker stop openresty
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/systemd/system/mongo.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=mongo (Docker)
+      After=docker-network@ptpb.service
+      After=mongo.service
+      Requires=docker-network@ptpb.service
+      Requires=mongo.service
+
+      [Service]
+      TimeoutStartSec=0
+      Restart=always
+      ExecStartPre=-/usr/bin/docker kill mongo
+      ExecStartPre=-/usr/bin/docker rm mongo
+      ExecStartPre=-/usr/bin/docker pull mongo:4
+      ExecStart=/usr/bin/docker run --rm \
+         --name mongo \
+         --network ptpb \
+         -v /mnt/disks/data/mongo:/data/db \
+         mongo:4
+      ExecStop=/usr/bin/docker stop mongo
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/systemd/system/pb.service
+    permissions: 0644
+    owner: root
+    content: |
+      [Unit]
+      Description=pb (Docker)
+      After=docker-network@ptpb.service
+      Requires=docker-network@ptpb.service
+
+      [Service]
+      TimeoutStartSec=0
+      Restart=always
+      ExecStartPre=-/usr/bin/docker kill pb
+      ExecStartPre=-/usr/bin/docker rm pb
+      ExecStartPre=-/usr/bin/docker pull ptpb/pb
+      ExecStart=/usr/bin/docker run --rm \
+          --name pb \
+          --network ptpb \
+          ptpb/pb
+      ExecStop=/usr/bin/docker stop pb
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - systemctl daemon-reload
+  - systemctl start docker-network@ptpb.service

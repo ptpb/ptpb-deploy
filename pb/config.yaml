@@ -1,0 +1,8 @@
+MONGO:
+  host: 'mongodb://mongo'
+
+MONGO_DATABASE: pb
+
+CDN_PREFIX: '//d34zelngniy2d8.cloudfront.net'
+
+VARNISH_BASE: 'http://varnish:6081'
