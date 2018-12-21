@@ -59,7 +59,7 @@ jobs:
       - run:
           name: service restart
           command: |
-            ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+            ssh-keygen -t rsa -N "" -f ~/.ssh/google_compute_engine
             gcloud compute ssh instance-ptpb-aio -- systemctl restart pb.service
             gcloud compute ssh instance-ptpb-aio -- systemctl restart varnish.service
             gcloud compute ssh instance-ptpb-aio -- systemctl restart openresty.service
