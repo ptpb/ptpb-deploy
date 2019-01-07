@@ -23,7 +23,7 @@ jobs:
       - run:
           name: build
           command: |
-            docker build --rm=false -t << parameters.image-name >> ./<< parameters.build-dir >>
+            docker build -t << parameters.image-name >> ./<< parameters.build-dir >>
       - run:
           name: login
           command: |
